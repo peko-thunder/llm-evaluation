@@ -21,6 +21,7 @@ class GoogleCloudProvider(BaseProvider):
 
     Config options:
         model_id (str): Gemini model identifier
+        location (str): Vertex AI region override (e.g. us-central1). Overrides GOOGLE_CLOUD_LOCATION env var.
         enable_thinking (bool): Enable thinking mode (default: False)
         thinking_budget (int): Max thinking tokens (default: 8192)
         temperature (float): Sampling temperature
@@ -39,7 +40,7 @@ class GoogleCloudProvider(BaseProvider):
         if api_key:
             self._client = genai.Client(api_key=api_key)
         elif project:
-            location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+            location = self.config.get("location") or os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
             self._client = genai.Client(
                 vertexai=True,
                 project=project,

@@ -119,7 +119,7 @@ python main.py --quiet "テスト"
 ------------------------------------------------------------------------------------------
 Model                                         In    Out  Think        ms  Status
 ------------------------------------------------------------------------------------------
-gemini-2.5-flash-preview-04-17               120    340    512    1234.5  OK
+gemini-2.5-flash                             120    340    512    1234.5  OK
 anthropic.claude-3-haiku-20240307-v1:0        98    280      -     890.2  OK
 ...
 ------------------------------------------------------------------------------------------
@@ -137,7 +137,7 @@ anthropic.claude-3-haiku-20240307-v1:0        98    280      -     890.2  OK
       "run_id": "uuid",
       "timestamp": "...",
       "provider": "google_cloud",
-      "model": "gemini-2.5-flash-preview-04-17",
+      "model": "gemini-2.5-flash",
       "prompt": "...",
       "response": "...",
       "tokens": {
@@ -162,7 +162,7 @@ anthropic.claude-3-haiku-20240307-v1:0        98    280      -     890.2  OK
 models:
   gemini-2-5-flash:
     provider: google_cloud
-    model_id: gemini-2.5-flash-preview-04-17
+    model_id: gemini-2.5-flash
     enabled: true
     options:
       enable_thinking: true
