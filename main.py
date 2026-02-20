@@ -70,7 +70,7 @@ def run_model(key: str, provider: BaseProvider, prompt: str) -> LLMResponse:
 
 
 def main() -> int:
-    load_dotenv()
+    load_dotenv(Path(__file__).parent / ".env")
 
     parser = argparse.ArgumentParser(
         description="Compare LLM responses across multiple cloud providers.",
