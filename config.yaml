@@ -1,0 +1,87 @@
+# LLM Evaluation Configuration
+#
+# Each entry under `models` defines one LLM to include in comparisons.
+# Keys are arbitrary short names used with --models on the CLI.
+#
+# Fields per model:
+#   provider    : "google_cloud" or "aws_bedrock"
+#   model_id    : The exact model identifier for the API
+#   enabled     : Whether this model is included in default runs (default: true)
+#   options     : Provider-specific options (see below)
+#
+# Google Cloud options:
+#   enable_thinking   (bool)  : Enable thinking mode (Gemini 2.5+ only)
+#   thinking_budget   (int)   : Max thinking tokens (default: 8192)
+#   temperature       (float) : Sampling temperature
+#   max_output_tokens (int)   : Max output tokens
+#
+# AWS Bedrock options (Claude):
+#   enable_thinking   (bool)  : Enable extended thinking
+#   thinking_budget   (int)   : Budget tokens for thinking (default: 8000)
+#   temperature       (float) : Sampling temperature (must be 1 when thinking)
+#   max_tokens        (int)   : Max output tokens (default: 4096)
+#   region            (str)   : AWS region override
+#
+# AWS Bedrock options (Amazon Nova):
+#   temperature  (float) : Sampling temperature
+#   max_tokens   (int)   : Max output tokens (default: 4096)
+#   region       (str)   : AWS region override
+
+models:
+
+  # ── Google Cloud ────────────────────────────────────────────────────────────
+
+  gemini-3-flash-preview:
+    provider: google_cloud
+    # Update this model ID when Gemini 3 Flash Preview becomes available
+    model_id: gemini-3-flash-preview-0517
+    enabled: true
+    options:
+      enable_thinking: false
+      max_output_tokens: 8192
+
+  gemini-2-5-flash:
+    provider: google_cloud
+    model_id: gemini-2.5-flash-preview-04-17
+    enabled: true
+    options:
+      enable_thinking: true
+      thinking_budget: 8192
+      max_output_tokens: 8192
+
+  gemini-2-5-flash-lite:
+    provider: google_cloud
+    model_id: gemini-2.5-flash-lite-preview-06-17
+    enabled: true
+    options:
+      enable_thinking: false
+      max_output_tokens: 8192
+
+  # ── AWS Bedrock ─────────────────────────────────────────────────────────────
+
+  claude-haiku-4-5:
+    provider: aws_bedrock
+    model_id: us.anthropic.claude-haiku-4-5-20251001-v1:0
+    enabled: true
+    options:
+      enable_thinking: false
+      max_tokens: 4096
+      region: us-east-1
+
+  claude-3-haiku:
+    provider: aws_bedrock
+    model_id: anthropic.claude-3-haiku-20240307-v1:0
+    enabled: true
+    options:
+      enable_thinking: false
+      max_tokens: 4096
+      region: us-east-1
+
+  amazon-nova2-lite:
+    provider: aws_bedrock
+    # Update this model ID when Amazon Nova2 Lite becomes GA
+    model_id: us.amazon.nova-lite-v2:0
+    enabled: true
+    options:
+      max_tokens: 4096
+      region: us-east-1
