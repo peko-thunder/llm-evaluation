@@ -7,15 +7,15 @@ from .base import BaseProvider, LLMResponse
 
 class GoogleCloudProvider(BaseProvider):
     """
-    Google Cloud Gemini models via Vertex AI SDK.
+    Google Gemini models via google-genai SDK.
 
-    Authenticates using Application Default Credentials (ADC) or a service
-    account key file.  Set GOOGLE_APPLICATION_CREDENTIALS to the path of a
-    service account JSON key file, or configure ADC with:
-        gcloud auth application-default login
+    Supports two authentication modes:
+    1. API Key: Set GOOGLE_API_KEY environment variable (Google AI Studio)
+    2. Vertex AI: Set GOOGLE_CLOUD_PROJECT (and optionally GOOGLE_CLOUD_LOCATION)
 
     Environment variables:
-        GOOGLE_CLOUD_PROJECT:        GCP project ID (required)
+        GOOGLE_API_KEY:              Google AI Studio API key (for API key auth)
+        GOOGLE_CLOUD_PROJECT:        GCP project ID (for Vertex AI auth)
         GOOGLE_CLOUD_LOCATION:       GCP region, e.g. us-central1 (default: us-central1)
         GOOGLE_APPLICATION_CREDENTIALS: Path to service account JSON key file (optional)
 
@@ -28,46 +28,52 @@ class GoogleCloudProvider(BaseProvider):
     """
 
     def __init__(self, model_id: str, config: Optional[dict] = None):
-        import vertexai
+        from google import genai
 
         self.model_id = model_id
         self.config = config or {}
 
+        api_key = os.environ.get("GOOGLE_API_KEY")
         project = os.environ.get("GOOGLE_CLOUD_PROJECT")
-        if not project:
-            raise ValueError("GOOGLE_CLOUD_PROJECT environment variable is not set")
 
-        location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
-
-        vertexai.init(project=project, location=location)
-
-        self._generation_config_kwargs = {}
-        if "temperature" in self.config:
-            self._generation_config_kwargs["temperature"] = self.config["temperature"]
-        if "max_output_tokens" in self.config:
-            self._generation_config_kwargs["max_output_tokens"] = self.config["max_output_tokens"]
+        if api_key:
+            self._client = genai.Client(api_key=api_key)
+        elif project:
+            location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+            self._client = genai.Client(
+                vertexai=True,
+                project=project,
+                location=location,
+            )
+        else:
+            raise ValueError(
+                "Either GOOGLE_API_KEY or GOOGLE_CLOUD_PROJECT environment variable must be set"
+            )
 
     def run(self, prompt: str) -> LLMResponse:
-        from vertexai.generative_models import GenerativeModel, GenerationConfig, ThinkingConfig
+        from google.genai import types
 
         enable_thinking = self.config.get("enable_thinking", False)
         thinking_budget = self.config.get("thinking_budget", 8192)
 
-        gen_config_kwargs = dict(self._generation_config_kwargs)
+        config_kwargs = {}
+        if "temperature" in self.config:
+            config_kwargs["temperature"] = self.config["temperature"]
+        if "max_output_tokens" in self.config:
+            config_kwargs["max_output_tokens"] = self.config["max_output_tokens"]
         if enable_thinking:
-            gen_config_kwargs["thinking_config"] = ThinkingConfig(
+            config_kwargs["thinking_config"] = types.ThinkingConfig(
                 thinking_budget=thinking_budget
             )
 
-        generation_config = GenerationConfig(**gen_config_kwargs) if gen_config_kwargs else None
-
-        model = GenerativeModel(self.model_id)
+        generate_config = types.GenerateContentConfig(**config_kwargs) if config_kwargs else None
 
         try:
             start = time.time()
-            response = model.generate_content(
-                prompt,
-                generation_config=generation_config,
+            response = self._client.models.generate_content(
+                model=self.model_id,
+                contents=prompt,
+                config=generate_config,
             )
             latency_ms = (time.time() - start) * 1000
 
