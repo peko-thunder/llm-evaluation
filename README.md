@@ -15,7 +15,45 @@ CLIツールで複数クラウドプロバイダーのLLMを同一プロンプ�
 
 ## セットアップ
 
-### 1. 依存パッケージのインストール
+### DevContainer を使う場合（推奨）
+
+VS Code と [Dev Containers 拡張機能](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) または GitHub Codespaces を使うと、依存パッケージのインストールなしにすぐ動作する環境が起動します。
+
+#### 認証情報の渡し方
+
+**方法 1: 環境変数（ホスト側で設定済みの場合）**
+
+ホスト OS に以下の環境変数を設定しておくと、コンテナに自動で引き継がれます。
+
+```bash
+export GOOGLE_API_KEY=your-google-api-key-here
+export AWS_ACCESS_KEY_ID=your-access-key-id
+export AWS_SECRET_ACCESS_KEY=your-secret-access-key
+export AWS_DEFAULT_REGION=us-east-1
+```
+
+**方法 2: `.env` ファイル**
+
+```bash
+cp .env.example .env
+# .env を編集してキーを設定
+```
+
+コンテナ起動後、`python-dotenv` が `.env` を自動読み込みします。
+
+**方法 3: AWS プロファイル（`~/.aws/credentials`）**
+
+ホストの `~/.aws` ディレクトリがコンテナに読み取り専用でマウントされます。IAM ロールや AWS SSO も利用可能です。
+
+#### 起動方法
+
+1. このリポジトリを VS Code で開く
+2. コマンドパレットで `Dev Containers: Reopen in Container` を実行
+3. コンテナのビルドが完了したら、ターミナルで実行可能になります
+
+### ローカル環境でセットアップする場合
+
+#### 1. 依存パッケージのインストール
 
 ```bash
 python -m venv .venv
@@ -23,7 +61,7 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. 認証情報の設定
+#### 2. 認証情報の設定
 
 ```bash
 cp .env.example .env
