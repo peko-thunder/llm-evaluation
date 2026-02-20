@@ -26,7 +26,9 @@ VS Code と [Dev Containers 拡張機能](https://marketplace.visualstudio.com/i
 ホスト OS に以下の環境変数を設定しておくと、コンテナに自動で引き継がれます。
 
 ```bash
-export GOOGLE_API_KEY=your-google-api-key-here
+export GOOGLE_CLOUD_PROJECT=your-gcp-project-id
+export GOOGLE_CLOUD_LOCATION=us-central1          # 省略時は us-central1
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json  # ADC使用時は不要
 export AWS_ACCESS_KEY_ID=your-access-key-id
 export AWS_SECRET_ACCESS_KEY=your-secret-access-key
 export AWS_DEFAULT_REGION=us-east-1
@@ -41,7 +43,12 @@ cp .env.example .env
 
 コンテナ起動後、`python-dotenv` が `.env` を自動読み込みします。
 
-**方法 3: AWS プロファイル（`~/.aws/credentials`）**
+**方法 3: Google Cloud ADC（Application Default Credentials）**
+
+`gcloud auth application-default login` で設定した ADC を使う場合、`GOOGLE_APPLICATION_CREDENTIALS` は不要です。
+ホストの `~/.config/gcloud` ディレクトリがコンテナに読み取り専用でマウントされるため、ADC がそのまま利用できます。
+
+**方法 4: AWS プロファイル（`~/.aws/credentials`）**
 
 ホストの `~/.aws` ディレクトリがコンテナに読み取り専用でマウントされます。IAM ロールや AWS SSO も利用可能です。
 
@@ -71,12 +78,15 @@ cp .env.example .env
 `.env` の内容:
 
 ```
-GOOGLE_API_KEY=...        # Google AI Studio の API キー
+GOOGLE_CLOUD_PROJECT=...           # GCP プロジェクト ID
+GOOGLE_CLOUD_LOCATION=us-central1  # GCP リージョン（省略時は us-central1）
+# GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json  # ADC 使用時は不要
 AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
 AWS_DEFAULT_REGION=us-east-1
 ```
 
+Google Cloud は `gcloud auth application-default login` による ADC でも認証可能です。
 AWS は `~/.aws/credentials` や IAM ロールでも認証可能です。
 
 ## 使い方

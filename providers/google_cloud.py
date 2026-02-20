@@ -7,13 +7,17 @@ from .base import BaseProvider, LLMResponse
 
 class GoogleCloudProvider(BaseProvider):
     """
-    Google Cloud Gemini models via Google Generative AI SDK.
+    Google Cloud Gemini models via Vertex AI SDK.
 
-    Supports token counting including thinking tokens for models
-    that support extended thinking (e.g. gemini-2.5-flash).
+    Authenticates using Application Default Credentials (ADC) or a service
+    account key file.  Set GOOGLE_APPLICATION_CREDENTIALS to the path of a
+    service account JSON key file, or configure ADC with:
+        gcloud auth application-default login
 
     Environment variables:
-        GOOGLE_API_KEY: Google AI Studio API key
+        GOOGLE_CLOUD_PROJECT:        GCP project ID (required)
+        GOOGLE_CLOUD_LOCATION:       GCP region, e.g. us-central1 (default: us-central1)
+        GOOGLE_APPLICATION_CREDENTIALS: Path to service account JSON key file (optional)
 
     Config options:
         model_id (str): Gemini model identifier
@@ -24,45 +28,47 @@ class GoogleCloudProvider(BaseProvider):
     """
 
     def __init__(self, model_id: str, config: Optional[dict] = None):
-        import google.generativeai as genai
+        import vertexai
 
         self.model_id = model_id
         self.config = config or {}
 
-        api_key = os.environ.get("GOOGLE_API_KEY")
-        if not api_key:
-            raise ValueError("GOOGLE_API_KEY environment variable is not set")
+        project = os.environ.get("GOOGLE_CLOUD_PROJECT")
+        if not project:
+            raise ValueError("GOOGLE_CLOUD_PROJECT environment variable is not set")
 
-        genai.configure(api_key=api_key)
+        location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
 
-        generation_config = {}
+        vertexai.init(project=project, location=location)
+
+        self._generation_config_kwargs = {}
         if "temperature" in self.config:
-            generation_config["temperature"] = self.config["temperature"]
+            self._generation_config_kwargs["temperature"] = self.config["temperature"]
         if "max_output_tokens" in self.config:
-            generation_config["max_output_tokens"] = self.config["max_output_tokens"]
-
-        self._genai = genai
-        self._generation_config = generation_config
+            self._generation_config_kwargs["max_output_tokens"] = self.config["max_output_tokens"]
 
     def run(self, prompt: str) -> LLMResponse:
+        from vertexai.generative_models import GenerativeModel, GenerationConfig, ThinkingConfig
+
         enable_thinking = self.config.get("enable_thinking", False)
         thinking_budget = self.config.get("thinking_budget", 8192)
 
-        generation_config = dict(self._generation_config)
-
+        gen_config_kwargs = dict(self._generation_config_kwargs)
         if enable_thinking:
-            generation_config["thinking_config"] = self._genai.types.ThinkingConfig(
+            gen_config_kwargs["thinking_config"] = ThinkingConfig(
                 thinking_budget=thinking_budget
             )
 
-        model = self._genai.GenerativeModel(
-            self.model_id,
-            generation_config=generation_config,
-        )
+        generation_config = GenerationConfig(**gen_config_kwargs) if gen_config_kwargs else None
+
+        model = GenerativeModel(self.model_id)
 
         try:
             start = time.time()
-            response = model.generate_content(prompt)
+            response = model.generate_content(
+                prompt,
+                generation_config=generation_config,
+            )
             latency_ms = (time.time() - start) * 1000
 
             usage = response.usage_metadata

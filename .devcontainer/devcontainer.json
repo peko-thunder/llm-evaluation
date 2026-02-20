@@ -6,7 +6,11 @@
 
   // Forward credentials from host environment variables
   "remoteEnv": {
-    "GOOGLE_API_KEY": "${localEnv:GOOGLE_API_KEY}",
+    // Google Cloud (Vertex AI) - project, region, and optional service account key path
+    "GOOGLE_CLOUD_PROJECT": "${localEnv:GOOGLE_CLOUD_PROJECT}",
+    "GOOGLE_CLOUD_LOCATION": "${localEnv:GOOGLE_CLOUD_LOCATION}",
+    "GOOGLE_APPLICATION_CREDENTIALS": "${localEnv:GOOGLE_APPLICATION_CREDENTIALS}",
+    // AWS Bedrock
     "AWS_ACCESS_KEY_ID": "${localEnv:AWS_ACCESS_KEY_ID}",
     "AWS_SECRET_ACCESS_KEY": "${localEnv:AWS_SECRET_ACCESS_KEY}",
     "AWS_DEFAULT_REGION": "${localEnv:AWS_DEFAULT_REGION}",
@@ -33,8 +37,10 @@
   },
 
   "mounts": [
-    // Mount AWS credentials file if present on the host
-    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.aws,target=/root/.aws,type=bind,consistency=cached,readonly"
+    // Mount AWS credentials directory if present on the host
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.aws,target=/root/.aws,type=bind,consistency=cached,readonly",
+    // Mount gcloud config directory for Application Default Credentials (ADC)
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.config/gcloud,target=/root/.config/gcloud,type=bind,consistency=cached,readonly"
   ],
 
   "features": {
