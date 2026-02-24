@@ -10,6 +10,16 @@ from providers.base import LLMResponse
 LOG_DIR = Path(__file__).parent.parent / "logs"
 
 
+def _is_valid_json(text: str | None) -> bool:
+    if not text:
+        return False
+    try:
+        json.loads(text)
+        return True
+    except (json.JSONDecodeError, ValueError):
+        return False
+
+
 def _response_to_dict(resp: LLMResponse, run_id: str, timestamp: str) -> dict:
     return {
         "run_id": run_id,
@@ -18,6 +28,7 @@ def _response_to_dict(resp: LLMResponse, run_id: str, timestamp: str) -> dict:
         "model": resp.model,
         "prompt": resp.prompt,
         "response": resp.response,
+        "valid_json": _is_valid_json(resp.response),
         "tokens": {
             "input": resp.input_tokens,
             "output": resp.output_tokens,
