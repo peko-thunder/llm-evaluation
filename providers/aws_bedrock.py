@@ -28,9 +28,9 @@ class AWSBedrockProvider(BaseProvider):
     """
 
     # Model families that use the Anthropic Messages API on Bedrock
-    ANTHROPIC_PREFIXES = ("anthropic.", "us.anthropic.", "eu.anthropic.", "ap.anthropic.")
+    ANTHROPIC_PREFIXES = ("anthropic.", "jp.anthropic.", "us.anthropic.", "eu.anthropic.", "ap.anthropic.")
     # Model families that use the Amazon Converse / Nova API
-    AMAZON_PREFIXES = ("amazon.", "us.amazon.", "eu.amazon.", "ap.amazon.")
+    AMAZON_PREFIXES = ("amazon.", "jp.amazon.", "us.amazon.", "eu.amazon.", "ap.amazon.")
 
     def __init__(self, model_id: str, config: Optional[dict] = None):
         import boto3

@@ -39,6 +39,7 @@ models:
     enabled: true
     options:
       location: global
+      enable_thinking: true
 
   gemini-2-5-flash:
     provider: google_cloud
@@ -46,6 +47,7 @@ models:
     enabled: true
     options:
       location: asia-northeast1
+      enable_thinking: true
 
   gemini-2-5-flash-lite:
     provider: google_cloud
@@ -53,6 +55,7 @@ models:
     enabled: true
     options:
       location: us-central1
+      enable_thinking: true
 
   # ── AWS Bedrock ─────────────────────────────────────────────────────────────
 
