@@ -94,6 +94,7 @@ models:
     enabled: true
     options:
       region: ap-northeast-1
+      enable_thinking: true
       response_format: json
       # response_schema:
       #   properties:
