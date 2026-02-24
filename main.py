@@ -26,7 +26,6 @@ Usage examples:
 """
 
 import argparse
-import os
 import sys
 import uuid
 import concurrent.futures
@@ -70,7 +69,7 @@ def run_model(key: str, provider: BaseProvider, prompt: str) -> LLMResponse:
 
 
 def main() -> int:
-    load_dotenv(Path(__file__).parent / ".env")
+    load_dotenv(override=True)
 
     parser = argparse.ArgumentParser(
         description="Compare LLM responses across multiple cloud providers.",
