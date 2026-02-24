@@ -14,6 +14,9 @@
 #   thinking_budget   (int)   : Max thinking tokens (default: 8192)
 #   temperature       (float) : Sampling temperature
 #   max_output_tokens (int)   : Max output tokens
+#   response_format   (str)   : "json" を指定すると response_mime_type=application/json を設定
+#   response_schema   (dict)  : JSON Schema の properties/required を記述（省略時はオープンスキーマ）
+#                               トップレベルの type: object は自動付与されるため不要
 #
 # AWS Bedrock options (Claude):
 #   enable_thinking   (bool)  : Enable extended thinking
@@ -21,11 +24,19 @@
 #   temperature       (float) : Sampling temperature (must be 1 when thinking)
 #   max_tokens        (int)   : Max output tokens (default: 4096)
 #   region            (str)   : AWS region override
+#   response_format   (str)   : "json" を指定すると構造化出力を有効化
+#                               Claude 4.x 系: output_config.format (InvokeModel API)
+#                               Claude 3.x 系: tool_use 強制 (json_output ツール)
+#   response_schema   (dict)  : JSON Schema の properties/required を記述（省略時はオープンスキーマ）
+#                               トップレベルの type: object と additionalProperties: false は自動付与
 #
 # AWS Bedrock options (Amazon Nova):
-#   temperature  (float) : Sampling temperature
-#   max_tokens   (int)   : Max output tokens (default: 4096)
-#   region       (str)   : AWS region override
+#   temperature       (float) : Sampling temperature
+#   max_tokens        (int)   : Max output tokens (default: 4096)
+#   region            (str)   : AWS region override
+#   response_format   (str)   : "json" を指定すると tool_use 強制 (Converse API の toolConfig)
+#   response_schema   (dict)  : JSON Schema の properties/required を記述（省略時はオープンスキーマ）
+#                               トップレベルの type: object は自動付与されるため不要
 
 models:
   # ── Google Cloud ────────────────────────────────────────────────────────────
@@ -40,6 +51,12 @@ models:
     options:
       location: global
       enable_thinking: true
+      response_format: json
+      # response_schema:
+      #   properties:
+      #     answer:
+      #       type: integer
+      #   required: [answer]
 
   gemini-2-5-flash:
     provider: google_cloud
@@ -48,6 +65,12 @@ models:
     options:
       location: asia-northeast1
       enable_thinking: true
+      response_format: json
+      # response_schema:
+      #   properties:
+      #     answer:
+      #       type: integer
+      #   required: [answer]
 
   gemini-2-5-flash-lite:
     provider: google_cloud
@@ -56,6 +79,12 @@ models:
     options:
       location: us-central1
       enable_thinking: true
+      response_format: json
+      # response_schema:
+      #   properties:
+      #     answer:
+      #       type: integer
+      #   required: [answer]
 
   # ── AWS Bedrock ─────────────────────────────────────────────────────────────
 
@@ -65,6 +94,12 @@ models:
     enabled: true
     options:
       region: ap-northeast-1
+      response_format: json
+      # response_schema:
+      #   properties:
+      #     answer:
+      #       type: integer
+      #   required: [answer]
 
   claude-3-haiku:
     provider: aws_bedrock
@@ -72,6 +107,12 @@ models:
     enabled: true
     options:
       region: ap-northeast-1
+      response_format: json
+      # response_schema:
+      #   properties:
+      #     answer:
+      #       type: integer
+      #   required: [answer]
 
   amazon-nova2-lite:
     provider: aws_bedrock
@@ -79,3 +120,9 @@ models:
     enabled: true
     options:
       region: ap-northeast-1
+      response_format: json
+      # response_schema:
+      #   properties:
+      #     answer:
+      #       type: integer
+      #   required: [answer]

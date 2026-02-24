@@ -28,6 +28,7 @@ def _response_to_dict(resp: LLMResponse, run_id: str, timestamp: str) -> dict:
         "model": resp.model,
         "prompt": resp.prompt,
         "response": resp.response,
+        "response_format": resp.response_format,
         "valid_json": _is_valid_json(resp.response),
         "tokens": {
             "input": resp.input_tokens,

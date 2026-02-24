@@ -15,6 +15,7 @@ class LLMResponse:
     latency_ms: float
     error: Optional[str] = None
     raw_usage: dict = field(default_factory=dict)
+    response_format: Optional[str] = None
 
 
 class BaseProvider(ABC):

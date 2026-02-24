@@ -56,6 +56,8 @@ class GoogleCloudProvider(BaseProvider):
 
         enable_thinking = self.config.get("enable_thinking", False)
         thinking_budget = self.config.get("thinking_budget", 8192)
+        response_format = self.config.get("response_format")
+        response_schema = self.config.get("response_schema")
 
         config_kwargs = {}
         if "temperature" in self.config:
@@ -66,6 +68,12 @@ class GoogleCloudProvider(BaseProvider):
             config_kwargs["thinking_config"] = types.ThinkingConfig(
                 thinking_budget=thinking_budget
             )
+        if response_format == "json":
+            config_kwargs["response_mime_type"] = "application/json"
+            if response_schema:
+                full_schema = {"type": "object"}
+                full_schema.update(response_schema)
+                config_kwargs["response_schema"] = full_schema
 
         generate_config = types.GenerateContentConfig(**config_kwargs) if config_kwargs else None
 
@@ -100,6 +108,7 @@ class GoogleCloudProvider(BaseProvider):
                 thinking_tokens=thinking_tokens,
                 latency_ms=latency_ms,
                 raw_usage=raw_usage,
+                response_format=response_format,
             )
 
         except Exception as e:
@@ -113,4 +122,5 @@ class GoogleCloudProvider(BaseProvider):
                 thinking_tokens=None,
                 latency_ms=0.0,
                 error=str(e),
+                response_format=response_format,
             )

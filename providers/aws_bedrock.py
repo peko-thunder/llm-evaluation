@@ -32,6 +32,15 @@ class AWSBedrockProvider(BaseProvider):
     # Model families that use the Amazon Converse / Nova API
     AMAZON_PREFIXES = ("amazon.", "jp.amazon.", "us.amazon.", "eu.amazon.", "ap.amazon.")
 
+    # Claude models that support native structured output via output_config.format
+    NATIVE_STRUCTURED_OUTPUT_PATTERNS = (
+        "claude-haiku-4-5",
+        "claude-sonnet-4-5",
+        "claude-opus-4-5",
+        "claude-opus-4-6",
+        "claude-sonnet-4-6",
+    )
+
     def __init__(self, model_id: str, config: Optional[dict] = None):
         import boto3
 
@@ -51,11 +60,16 @@ class AWSBedrockProvider(BaseProvider):
     def _is_amazon_model(self) -> bool:
         return any(self.model_id.startswith(p) for p in self.AMAZON_PREFIXES)
 
+    def _supports_native_structured_output(self) -> bool:
+        return any(p in self.model_id for p in self.NATIVE_STRUCTURED_OUTPUT_PATTERNS)
+
     def _run_anthropic(self, prompt: str) -> LLMResponse:
         """Invoke a Claude model via the Anthropic Messages API on Bedrock."""
         enable_thinking = self.config.get("enable_thinking", False)
         thinking_budget = self.config.get("thinking_budget", 8000)
         max_tokens = self.config.get("max_tokens", 4096)
+        response_format = self.config.get("response_format")
+        response_schema = self.config.get("response_schema")
 
         request_body: dict = {
             "anthropic_version": "bedrock-2023-05-31",
@@ -73,6 +87,31 @@ class AWSBedrockProvider(BaseProvider):
         else:
             if "temperature" in self.config:
                 request_body["temperature"] = self.config["temperature"]
+
+        if response_format == "json" and self._supports_native_structured_output():
+            json_schema: dict = {"type": "object"}
+            if response_schema:
+                json_schema.update(response_schema)
+            # Bedrock requires additionalProperties: false for output_config.format
+            json_schema["additionalProperties"] = False
+            request_body["output_config"] = {
+                "format": {
+                    "type": "json_schema",
+                    "schema": json_schema,
+                }
+            }
+        elif response_format == "json":
+            input_schema: dict = {"type": "object"}
+            if response_schema:
+                input_schema.update(response_schema)
+            else:
+                input_schema["additionalProperties"] = True
+            request_body["tools"] = [{
+                "name": "json_output",
+                "description": "Output the response as structured JSON",
+                "input_schema": input_schema,
+            }]
+            request_body["tool_choice"] = {"type": "tool", "name": "json_output"}
 
         try:
             start = time.time()
@@ -99,6 +138,8 @@ class AWSBedrockProvider(BaseProvider):
                     )
                 elif block.get("type") == "text":
                     response_text_parts.append(block.get("text", ""))
+                elif block.get("type") == "tool_use" and block.get("name") == "json_output":
+                    response_text_parts.append(json.dumps(block["input"], ensure_ascii=False))
 
             # If extended thinking is on, Bedrock may report cache_read/creation tokens too
             raw_usage = {
@@ -118,6 +159,7 @@ class AWSBedrockProvider(BaseProvider):
                 thinking_tokens=thinking_tokens,
                 latency_ms=latency_ms,
                 raw_usage=raw_usage,
+                response_format=response_format,
             )
 
         except Exception as e:
@@ -131,23 +173,40 @@ class AWSBedrockProvider(BaseProvider):
                 thinking_tokens=None,
                 latency_ms=0.0,
                 error=str(e),
+                response_format=response_format,
             )
 
     def _run_amazon_converse(self, prompt: str) -> LLMResponse:
         """Invoke an Amazon Nova model via the Converse API."""
         max_tokens = self.config.get("max_tokens", 4096)
+        response_format = self.config.get("response_format")
+        response_schema = self.config.get("response_schema")
 
         inference_config: dict = {"maxTokens": max_tokens}
         if "temperature" in self.config:
             inference_config["temperature"] = self.config["temperature"]
 
+        converse_kwargs: dict = {
+            "modelId": self.model_id,
+            "messages": [{"role": "user", "content": [{"text": prompt}]}],
+            "inferenceConfig": inference_config,
+        }
+        if response_format == "json":
+            json_schema: dict = {"type": "object"}
+            if response_schema:
+                json_schema.update(response_schema)
+            converse_kwargs["toolConfig"] = {
+                "tools": [{"toolSpec": {
+                    "name": "json_output",
+                    "description": "Output the response as structured JSON",
+                    "inputSchema": {"json": json_schema},
+                }}],
+                "toolChoice": {"tool": {"name": "json_output"}},
+            }
+
         try:
             start = time.time()
-            response = self.client.converse(
-                modelId=self.model_id,
-                messages=[{"role": "user", "content": [{"text": prompt}]}],
-                inferenceConfig=inference_config,
-            )
+            response = self.client.converse(**converse_kwargs)
             latency_ms = (time.time() - start) * 1000
 
             usage = response.get("usage", {})
@@ -160,11 +219,12 @@ class AWSBedrockProvider(BaseProvider):
             )
 
             output_message = response.get("output", {}).get("message", {})
-            content_parts = [
-                block.get("text", "")
-                for block in output_message.get("content", [])
-                if "text" in block
-            ]
+            content_parts = []
+            for block in output_message.get("content", []):
+                if "text" in block:
+                    content_parts.append(block["text"])
+                elif "toolUse" in block and block["toolUse"].get("name") == "json_output":
+                    content_parts.append(json.dumps(block["toolUse"]["input"], ensure_ascii=False))
 
             raw_usage = {
                 "inputTokens": input_tokens,
@@ -182,6 +242,7 @@ class AWSBedrockProvider(BaseProvider):
                 thinking_tokens=thinking_tokens,
                 latency_ms=latency_ms,
                 raw_usage=raw_usage,
+                response_format=response_format,
             )
 
         except Exception as e:
@@ -195,6 +256,7 @@ class AWSBedrockProvider(BaseProvider):
                 thinking_tokens=None,
                 latency_ms=0.0,
                 error=str(e),
+                response_format=response_format,
             )
 
     def run(self, prompt: str) -> LLMResponse:
