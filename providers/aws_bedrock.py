@@ -66,7 +66,7 @@ class AWSBedrockProvider(BaseProvider):
     def _run_anthropic(self, prompt: str) -> LLMResponse:
         """Invoke a Claude model via the Anthropic Messages API on Bedrock."""
         enable_thinking = self.config.get("enable_thinking", False)
-        thinking_budget = self.config.get("thinking_budget", 8000)
+        thinking_budget = self.config.get("thinking_budget", 2000)
         max_tokens = self.config.get("max_tokens", 4096)
         response_format = self.config.get("response_format")
         response_schema = self.config.get("response_schema")
